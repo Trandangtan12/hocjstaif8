@@ -14,6 +14,8 @@
 const $ = document.querySelector.bind(document);
 const $$ = document.querySelectorAll.bind(document);
 
+const PLAYER_STORAGE_KEY = 'F8_PLAYER'
+
 const player = $(".player");
 const cd = $(".cd");
 const heading = $("header h2");
@@ -23,10 +25,17 @@ const playBtn = $(".btn-toggle-play");
 const progress = $("#progress");
 const nextBtn = $(".btn-next");
 const prevBtn = $(".btn-prev");
+const randomBtn = $(".btn-random");
+const repeatBtn = $('.btn-repeat');
+const playlist = $('.playlist');
 
 const app = {
   currentIndex: 0,
   isPlaying: false,
+  isRandom: false,
+  isRepeat: false,
+  config: JSON.parse(localStorage.getItem(PLAYER_STORAGE_KEY)) || {},
+
   songs: [
     {
       name: "Song 1",
@@ -89,11 +98,15 @@ const app = {
       image: "./img/song (10).jpg",
     },
   ],
+  setConfig: function (key, value) {
+    this.config[key] = value;
+    localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(this.config));
+  },
   render: function () {
     const htmls = this.songs
-      .map((song) => {
+      .map((song, index) => {
         return `
-            <div class="song">
+            <div class="song ${index === this.currentIndex ? 'active' : ''}" data-index="${index}">
             <div class="thumb" style="background-image: url('${song.image}')">
             </div>
             <div class="body">
@@ -106,7 +119,7 @@ const app = {
           </div>`;
       })
       .join("");
-    $(".playlist").innerHTML = htmls;
+    playlist.innerHTML = htmls;
   },
   defineProperties: function () {
     Object.defineProperty(this, "currentSong", {
@@ -189,41 +202,121 @@ const app = {
     };
     //Khi next song
     nextBtn.onclick = function () {
-      _this.nextSong();
+      if (_this.isRandom) {
+        _this.playRandomSong();
+      } else {
+        _this.nextSong();
+      }
       audio.play();
       player.classList.add("playing");
       cdThumbAnimate.play();
+      _this.render()
+      _this.scrollToActiveSong();
     };
 
     //khi prev song
-  prevBtn.onclick = function () {
-    _this.prevSong();
-    audio.play();
-    player.classList.add("playing");
-    cdThumbAnimate.play();
-  };
-},
+    prevBtn.onclick = function () {
+      if (_this.isRandom) {
+        _this.playRandomSong();
+      } else {
+        _this.prevSong();
+      }
+      audio.play();
+      player.classList.add("playing");
+      cdThumbAnimate.play();
+      _this.render()
+      _this.scrollToActiveSong();
+    };
+
+    //Khi xử lý bật tắt random song
+    randomBtn.onclick = function () {
+      _this.isRandom = !_this.isRandom;
+      randomBtn.classList.toggle("active", _this.isRandom);
+      _this.setConfig('isRandom', _this.isRandom)
+    };
+    // xử lý khi next song khi audio ended
+    audio.onended = function () {
+      if (_this.isRepeat) {
+        audio.play()
+      } else {
+        if (this.isRandom = true) {
+          nextBtn.click() // hàm click xử lý những việc tự bấm nút click
+        }
+      }
+
+
+    }
+
+    //Xử lý lặp lại 1 song
+    repeatBtn.onclick = function () {
+      _this.isRepeat = !_this.isRepeat;
+      repeatBtn.classList.toggle('active', _this.isRepeat)
+      _this.setConfig('isRepeat', _this.isRepeat)
+
+    }
+
+    // Lắng nghe hành vi click vào playlist
+    playlist.onclick = function (e) {
+      const songNode = e.target.closest('.song:not(.active)') 
+      if ( songNode|| e.target.closest('.option')) {
+        //Xử lý khi click vào song
+        if (songNode) {
+            _this.currentIndex = Number(songNode.dataset.index)
+            _this.render()
+            _this.loadCurrentSong()
+            audio.play()
+            // player.classList.add("playing");
+            // cdThumbAnimate.play();
+        }
+
+        //Xử lý khi click vào song option
+      }
+    }
+  },
   loadCurrentSong: function () {
     heading.textContent = this.currentSong.name;
     cdThumb.style.backgroundImage = `url('${this.currentSong.image}')`;
     audio.src = this.currentSong.path;
+  },
+  loadConfig: function () {
+    this.isRandom = this.config.isRandom
+    this.isRepeat = this.config.isRepeat
+   
+
   },
   nextSong: function () {
     this.currentIndex++;
     if (this.currentIndex >= this.songs.length) {
       this.currentIndex = 0;
     }
-    this.loadCurrentSong()
+    this.loadCurrentSong();
   },
   prevSong: function () {
     this.currentIndex--;
     if (this.currentIndex < 0) {
-      this.currentIndex = this.songs.length;
+      this.currentIndex = this.songs.length - 1;
     }
-    this.loadCurrentSong()
+    this.loadCurrentSong();
   },
-
+  playRandomSong: function () {
+    let newIndex;
+    do {
+      newIndex = Math.floor(Math.random() * this.songs.length);
+    } while (newIndex === this.currentIndex);
+    this.currentIndex = newIndex;
+    this.loadCurrentSong();
+  },
+  scrollToActiveSong: function () {
+    setTimeout(() => {
+      $('.song.active').scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      }, 300)
+    })
+  },
   start: function () {
+    //Gán cấu hình từ config vào ứng dụng
+    this.loadConfig()
     //Định nghĩa các thuộc tính cho object
     this.defineProperties();
 
@@ -235,6 +328,10 @@ const app = {
 
     //Render playlist
     this.render();
+
+    //Hiện thị trạng thái ban đầu của btn reapeat && btn random
+    repeatBtn.classList.toggle('active', this.isRepeat)
+    randomBtn.classList.toggle('active', this.isRandom)
   },
 };
 app.start();

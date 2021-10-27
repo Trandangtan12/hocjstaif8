@@ -28,11 +28,11 @@ Array.prototype.map2 = function(callback){
   return output;
 }
 
-var courses = ["js", "php", "ruby"];
+// var courses = ["js", "php", "ruby"];
 
-var html = courses.map2(function (course) {
-  return `<h2>${course}</h2>`;
-});
-console.log('Result:', html);
+// var html = courses.map2(function (course) {
+//   return `<h2>${course}</h2>`;
+// });
+// console.log('Result:', html);
 //Bài tập forEach2, reduce2, find2, filter2
 

@@ -1,4 +1,4 @@
-var promise = new Promise(
+var promise = new Promise( // Là 1 object contructor
     function (resole, reject) /* hàm trả về 2 tham số */ {
         // thực hiện logic
         // thành công: resole()

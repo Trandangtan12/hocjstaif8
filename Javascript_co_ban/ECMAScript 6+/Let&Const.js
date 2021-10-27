@@ -7,6 +7,8 @@
     console.log(course);
 }
 
+
+
 // console.log(course); //không hiện ra được vì ngoài scope
 // var thì truy cập được
 // let, const thì không vì ngoài block scope
